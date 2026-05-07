@@ -13,6 +13,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import os from 'os';
 import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -63,6 +64,34 @@ const deepseekClient = new OpenAI({
 app.use('/api/qbo', qboRouter);
 
 // ── API ROUTES ────────────────────────────────────────────
+
+// ── Server Info (for launcher page) ─────────────────────
+app.get('/api/server-info', (req, res) => {
+  const interfaces = os.networkInterfaces();
+  const addresses = [];
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        addresses.push({ name, address: iface.address });
+      }
+    }
+  }
+  const primary = addresses.find(a =>
+    a.address.startsWith('192.168.') ||
+    a.address.startsWith('10.') ||
+    a.address.startsWith('172.')
+  ) || addresses[0];
+  const localIP = primary ? primary.address : 'localhost';
+  res.json({
+    hostname: os.hostname(),
+    port: PORT,
+    localIP,
+    allAddresses: addresses,
+    url: `http://${localIP}:${PORT}`,
+    launcherUrl: `http://${localIP}:${PORT}/launcher.html`,
+    version: '2.1.0'
+  });
+});
 
 // Health check
 app.get('/api/health', (req, res) => {

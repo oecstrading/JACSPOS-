@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JACS POS — Launcher</title>
+  <meta name="description" content="JACS POS Network Launcher — one click to open the POS on any device" />
+
+  <!-- QR Code library (loaded from CDN, works offline after first load) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0F172A;
+      color: #F1F5F9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 40px 36px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+    }
+
+    .logo {
+      font-size: 52px;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #F1F5F9;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #94A3B8;
+      margin-bottom: 32px;
+    }
+
+    /* Status indicator */
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 28px;
+      font-size: 14px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #64748B;
+      animation: pulse 2s infinite;
+    }
+    .status-dot.online  { background: #22C55E; }
+    .status-dot.offline { background: #EF4444; animation: none; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Server address display */
+    .address-box {
+      background: #0F172A;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .address-text {
+      font-family: 'Courier New', monospace;
+      font-size: 17px;
+      font-weight: 600;
+      color: #38BDF8;
+      word-break: break-all;
+      text-align: left;
+    }
+
+    .copy-btn {
+      background: #334155;
+      border: none;
+      border-radius: 8px;
+      color: #94A3B8;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 13px;
+      white-space: nowrap;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .copy-btn:hover { background: #475569; color: #F1F5F9; }
+    .copy-btn.copied { background: #166534; color: #86EFAC; }
+
+    /* Launch button */
+    .launch-btn {
+      display: block;
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, #E85D04, #FF6B35);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 8px 24px rgba(232, 93, 4, 0.35);
+      margin-bottom: 12px;
+    }
+    .launch-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(232, 93, 4, 0.5);
+    }
+    .launch-btn:active { transform: translateY(0); }
+    .launch-btn.disabled {
+      background: #334155;
+      color: #64748B;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Open in new tab link */
+    .open-tab-link {
+      display: block;
+      color: #94A3B8;
+      font-size: 13px;
+      text-decoration: none;
+      margin-bottom: 28px;
+      transition: color 0.2s;
+    }
+    .open-tab-link:hover { color: #CBD5E1; }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      color: #475569;
+      font-size: 12px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #334155;
+    }
+
+    /* QR Code section */
+    .qr-section h3 {
+      font-size: 14px;
+      color: #94A3B8;
+      margin-bottom: 14px;
+    }
+
+    #qr-canvas {
+      border-radius: 12px;
+      background: white;
+      padding: 12px;
+      display: inline-block;
+    }
+
+    .qr-hint {
+      font-size: 12px;
+      color: #64748B;
+      margin-top: 10px;
+    }
+
+    /* All devices section */
+    .devices-section {
+      margin-top: 28px;
+      text-align: left;
+    }
+
+    .devices-section h3 {
+      font-size: 13px;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+    }
+
+    .device-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: #0F172A;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+      text-decoration: none;
+      color: inherit;
+    }
+    .device-row:hover { background: #1E3A5F; }
+
+    .device-icon { font-size: 18px; }
+    .device-name { font-size: 14px; color: #CBD5E1; flex: 1; }
+    .device-addr { font-size: 12px; color: #38BDF8; font-family: monospace; }
+
+    /* Error state */
+    .error-box {
+      background: #450A0A;
+      border: 1px solid #7F1D1D;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #FCA5A5;
+      display: none;
+    }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #334155;
+      border-top-color: #38BDF8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Footer */
+    .footer {
+      margin-top: 28px;
+      font-size: 12px;
+      color: #475569;
+    }
+    .footer a { color: #64748B; text-decoration: none; }
+    .footer a:hover { color: #94A3B8; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">🏪</div>
+  <h1>JACS POS</h1>
+  <p class="subtitle">Network Launcher — tap once to open on any device</p>
+
+  <!-- Status row -->
+  <div class="status-row">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="status-text"><span class="spinner"></span>Detecting server…</span>
+  </div>
+
+  <!-- Error box (shown if server not found) -->
+  <div class="error-box" id="error-box">
+    ⚠️ Cannot reach the JACS POS server.<br>
+    Make sure the server is running on the host computer, then refresh this page.
+  </div>
+
+  <!-- Server address display -->
+  <div class="address-box" id="address-box" style="display:none">
+    <span class="address-text" id="address-text">—</span>
+    <button class="copy-btn" id="copy-btn" onclick="copyAddress()">Copy</button>
+  </div>
+
+  <!-- Launch button -->
+  <a class="launch-btn disabled" id="launch-btn" href="#" onclick="return launchPOS()">
+    🚀 &nbsp;Open JACS POS
+  </a>
+
+  <!-- Open in new tab -->
+  <a class="open-tab-link" id="open-tab-link" href="#" target="_blank" style="display:none">
+    ↗ Open in new tab
+  </a>
+
+  <!-- Divider -->
+  <div class="divider">Scan to open on phone or tablet</div>
+
+  <!-- QR Code -->
+  <div class="qr-section">
+    <h3>Point your phone camera at this code</h3>
+    <canvas id="qr-canvas" width="180" height="180"></canvas>
+    <p class="qr-hint" id="qr-hint">Generating QR code…</p>
+  </div>
+
+  <!-- All network addresses -->
+  <div class="devices-section" id="devices-section" style="display:none">
+    <h3>All network addresses</h3>
+    <div id="devices-list"></div>
+  </div>
+
+  <div class="footer">
+    JACS POS v2.1.0 &nbsp;·&nbsp;
+    <a href="/api/health" target="_blank">Server Health</a> &nbsp;·&nbsp;
+    <a href="mailto:cuthbert@oecstrading.com">Support</a>
+  </div>
+</div>
+
+<script>
+  let posURL = null;
+
+  // ── Detect server address ────────────────────────────────
+  async function detectServer() {
+    const dot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const launchBtn = document.getElementById('launch-btn');
+    const errorBox = document.getElementById('error-box');
+    const addressBox = document.getElementById('address-box');
+    const addressText = document.getElementById('address-text');
+    const openTabLink = document.getElementById('open-tab-link');
+    const devicesSection = document.getElementById('devices-section');
+    const devicesList = document.getElementById('devices-list');
+
+    try {
+      // First try: call the server-info endpoint from the current origin
+      // This works when the launcher is served by the POS server itself
+      const res = await fetch('/api/server-info', { signal: AbortSignal.timeout(4000) });
+      if (!res.ok) throw new Error('Server returned ' + res.status);
+      const info = await res.json();
+
+      posURL = info.url;
+      const displayURL = info.url;
+
+      // Update UI — success
+      dot.className = 'status-dot online';
+      statusText.textContent = '✓ Server found on ' + info.hostname;
+
+      addressBox.style.display = 'flex';
+      addressText.textContent = displayURL;
+
+      launchBtn.href = posURL;
+      launchBtn.className = 'launch-btn';
+
+      openTabLink.href = posURL;
+      openTabLink.style.display = 'block';
+      openTabLink.textContent = '↗ Open in new tab  (' + displayURL + ')';
+
+      // Generate QR code
+      generateQR(displayURL);
+
+      // Show all addresses
+      if (info.allAddresses && info.allAddresses.length > 1) {
+        devicesSection.style.display = 'block';
+        devicesList.innerHTML = info.allAddresses.map(a => `
+          <a class="device-row" href="http://${a.address}:${info.port}" target="_blank">
+            <span class="device-icon">🖥️</span>
+            <span class="device-name">${a.name}</span>
+            <span class="device-addr">http://${a.address}:${info.port}</span>
+          </a>
+        `).join('');
+      }
+
+    } catch (err) {
+      // Fallback: try common local addresses
+      console.warn('[Launcher] /api/server-info failed, trying fallback:', err.message);
+      const found = await tryFallbackAddresses();
+      if (!found) {
+        dot.className = 'status-dot offline';
+        statusText.textContent = 'Server not found';
+        errorBox.style.display = 'block';
+        generateQR(window.location.origin); // QR of current page as fallback
+      }
+    }
+  }
+
+  // ── Fallback: scan common LAN addresses ─────────────────
+  async function tryFallbackAddresses() {
+    const candidates = [
+      window.location.origin,           // Same origin (cloud/tunnel)
+      'http://localhost:3000',
+      'http://localhost:4500',
+      'http://192.168.1.1:3000',
+    ];
+
+    for (const base of candidates) {
+      try {
+        const res = await fetch(base + '/api/health', { signal: AbortSignal.timeout(1500) });
+        if (res.ok) {
+          posURL = base;
+          document.getElementById('status-dot').className = 'status-dot online';
+          document.getElementById('status-text').textContent = '✓ Server found';
+          document.getElementById('address-box').style.display = 'flex';
+          document.getElementById('address-text').textContent = base;
+          const btn = document.getElementById('launch-btn');
+          btn.href = base;
+          btn.className = 'launch-btn';
+          document.getElementById('open-tab-link').href = base;
+          document.getElementById('open-tab-link').style.display = 'block';
+          document.getElementById('open-tab-link').textContent = '↗ Open in new tab  (' + base + ')';
+          generateQR(base);
+          return true;
+        }
+      } catch { /* try next */ }
+    }
+    return false;
+  }
+
+  // ── Generate QR code ─────────────────────────────────────
+  function generateQR(url) {
+    const canvas = document.getElementById('qr-canvas');
+    const hint = document.getElementById('qr-hint');
+    if (typeof QRCode === 'undefined') {
+      hint.textContent = 'QR library loading… refresh to retry.';
+      return;
+    }
+    QRCode.toCanvas(canvas, url, {
+      width: 180,
+      margin: 1,
+      color: { dark: '#0F172A', light: '#FFFFFF' }
+    }, (err) => {
+      if (err) {
+        hint.textContent = 'QR generation failed. Use the address above.';
+      } else {
+        hint.textContent = 'Scan with any phone camera to open instantly';
+      }
+    });
+  }
+
+  // ── Launch POS ───────────────────────────────────────────
+  function launchPOS() {
+    if (!posURL) return false;
+    // On mobile/tablet: navigate in same tab (feels like an app)
+    // On desktop: open in same tab (user can use browser back if needed)
+    window.location.href = posURL;
+    return false;
+  }
+
+  // ── Copy address to clipboard ────────────────────────────
+  function copyAddress() {
+    const addr = document.getElementById('address-text').textContent;
+    navigator.clipboard.writeText(addr).then(() => {
+      const btn = document.getElementById('copy-btn');
+      btn.textContent = '✓ Copied!';
+      btn.className = 'copy-btn copied';
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.className = 'copy-btn';
+      }, 2000);
+    });
+  }
+
+  // ── Auto-refresh every 30 seconds if offline ─────────────
+  setInterval(() => {
+    if (document.getElementById('status-dot').className.includes('offline')) {
+      detectServer();
+    }
+  }, 30000);
+
+  // ── Start detection on load ──────────────────────────────
+  detectServer();
+</script>
+</body>
+</html>
