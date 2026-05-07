@@ -1,0 +1,42 @@
+{
+  "version": 2,
+  "buildCommand": "cd client && npm install && npm run build",
+  "outputDirectory": "client/dist",
+  "installCommand": "npm install",
+  "framework": null,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "functions": {
+    "server/server.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/server/server.js"
+    },
+    {
+      "src": "/sw.js",
+      "dest": "/client/dist/sw.js",
+      "headers": {
+        "Cache-Control": "no-cache",
+        "Service-Worker-Allowed": "/"
+      }
+    },
+    {
+      "src": "/manifest.json",
+      "dest": "/client/dist/manifest.json"
+    },
+    {
+      "src": "/launcher.html",
+      "dest": "/client/dist/launcher.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/client/dist/$1"
+    }
+  ]
+}

@@ -13,7 +13,8 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: '../dist',
+    // Output to client/dist (Vercel looks here via vercel.json outputDirectory)
+    outDir: 'dist',
     emptyOutDir: true,
   },
   publicDir: 'public',
