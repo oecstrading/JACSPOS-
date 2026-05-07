@@ -32,6 +32,7 @@ const INDUSTRIES = [
   { id: 'restaurant', name: 'Restaurant / Café', icon: '🍽️', desc: 'Tables, tips, kitchen display' },
   { id: 'retail', name: 'Retail Store', icon: '🛍️', desc: 'Barcode scanning, inventory' },
   { id: 'wholesale', name: 'Wholesale / Distribution', icon: '🏭', desc: 'Bulk pricing, net terms' },
+  { id: 'wholesale_retail', name: 'Wholesale + Retail', icon: '🏪🏭', desc: 'Dual-mode: retail POS + wholesale orders, bulk & unit pricing' },
   { id: 'medical', name: 'Medical Practice', icon: '🏥', desc: 'Patient check-in, copay' },
   { id: 'airbnb', name: 'Airbnb / Vacation Rental', icon: '🏡', desc: 'Booking calendar, channels' },
   { id: 'hotel', name: 'Small Hotel / Motel', icon: '🏨', desc: 'Front desk, housekeeping' },
